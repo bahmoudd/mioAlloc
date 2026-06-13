@@ -15,6 +15,9 @@ Block *initHeap() {
                            MAP_PRIVATE | MAP_ANONYMOUS,
                            -1, 0);
 
+    if (rawMemory == MAP_FAILED)   
+        return NULL;
+
     HeapMetadata *heapMetadata = (HeapMetadata*) rawMemory;
     Block *firstBlock = (Block*) ((uint8_t*) rawMemory + sizeof(HeapMetadata));
     void *heapEnd = (uint8_t*) rawMemory + PAGE_SIZE;
@@ -123,7 +126,7 @@ static void insertIntoFreeList(Block* block) {
 }
 
 static void largeFree(void *pointer) {
-    Block *block = (Block*)((uint8_t*) pointer - sizeof(Block));
+    Block *block = (Block*) ((uint8_t*) pointer - sizeof(Block));
     if (!block->isLarge)
         return;
     
@@ -276,8 +279,4 @@ size_t getMioPointerSize(void *pointer) {
     Block *block = (Block*) ((uint8_t*)pointer - sizeof(Block));
 
     return (uint8_t*)block->end - (uint8_t*)block->start;
-}
-
-static int mulBy10(int a) {
-    return (a << 3) + (a << 1);
 }
