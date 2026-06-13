@@ -2,6 +2,10 @@
 
 I chose the name `mioMalloc` because `mio` stands for `My Implementation Of`.
 
+`mmap()` is used over `brk()` and `sbrk()` because the latter functions are naive and has some issues which can be seen [here](https://stackoverflow.com/questions/68123943/advantages-of-mmap-over-sbrk)
+
+I used a doubly-linked list over a singly-linked list simply to make writing some functions easier.
+
 ## An explanation of each function
 
 mioMalloc works by first initialising a free list to `NULL`.
