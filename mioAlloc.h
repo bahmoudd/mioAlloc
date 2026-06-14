@@ -17,7 +17,6 @@ typedef struct Block {
     struct HeapMetadata *heapMetadata;
     struct Block *prev;
     struct Block *next;
-    size_t size;
     void *start;
     void *end;
     bool inUse;
@@ -40,6 +39,5 @@ void mioFree(void *pointer);
 void *mioCalloc(size_t num, size_t requestedSize);
 void *mioRealloc(void *pointer, size_t requestedSize);
 size_t getMioPointerSize(void *pointer);
-void mioPrintInfo(void *pointer);
 
 #endif
