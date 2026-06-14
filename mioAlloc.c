@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <stddef.h>
+#include <stdio.h>
 #include "./mioAlloc.h"
 
 static Block *freeList = NULL;
@@ -24,6 +25,7 @@ Block *initHeap() {
 
     firstBlock->start = (uint8_t*)firstBlock + sizeof(Block);
     firstBlock->end = heapEnd;
+    firstBlock->size = heapEnd - firstBlock->start;
     firstBlock->inUse = false;
     firstBlock->heapMetadata = heapMetadata;
     firstBlock->next = NULL;
@@ -56,6 +58,7 @@ static Block *splitBlock(Block *blockToResize, size_t newSize) {
     newBlock->inUse = false;
     newBlock->prev = blockToResize;
     newBlock->next = blockToResize->next;
+    newBlock->size = newBlock->end - newBlock->start;
     newBlock->isLarge = false;
 
     if (blockToResize->next)
@@ -63,6 +66,7 @@ static Block *splitBlock(Block *blockToResize, size_t newSize) {
 
     blockToResize->end = newBlock;
     blockToResize->inUse = false;
+    blockToResize->size = blockToResize->end - blockToResize->start;
 
     return newBlock;
 }
@@ -98,6 +102,7 @@ static void *largeMalloc(size_t requestedSize) {
     block->end = (uint8_t*)rawMemory + requestedSize + sizeof(Block);
     block->inUse = true;
     block->isLarge = true;
+    block->size = block->end - block->start;
     
     return block->start;
 }
@@ -130,9 +135,7 @@ static void largeFree(void *pointer) {
     if (!block->isLarge)
         return;
     
-    size_t blockSize = (uint8_t*) block->end - (uint8_t*) block->start;
-
-    munmap(block, blockSize);
+    munmap(block, block->size);
 }
 
 void *mioMalloc(size_t requestedSize) {
@@ -148,7 +151,7 @@ void *mioMalloc(size_t requestedSize) {
 
     HeapMetadata *heapMetadata = currentBlock->heapMetadata;
     while (currentBlock) {
-        if ((uint8_t*)currentBlock->end - (uint8_t*)currentBlock->start < roundedSize) {
+        if (currentBlock->size < roundedSize) {
             currentBlock = currentBlock->next;
         } else {
             break;
@@ -239,7 +242,7 @@ void *mioRealloc(void *pointer, size_t requestedSize) {
     }
 
     Block *block = (Block*)((uint8_t*)pointer - sizeof(Block));
-    size_t oldSize = (uint8_t*)block->end - (uint8_t*)block->start;
+    size_t oldSize = block->size;
 
     size_t newSize = roundToMul16(requestedSize);
 
@@ -255,7 +258,7 @@ void *mioRealloc(void *pointer, size_t requestedSize) {
     }
 
     if (block->next && !block->next->inUse) {
-        size_t combined = oldSize + ((uint8_t*)block->next->end - (uint8_t*)block->next->start);
+        size_t combined = oldSize + block->next->size;
         
         if (combined >= newSize) {
             mergeWithNext(block);
@@ -278,5 +281,11 @@ void *mioRealloc(void *pointer, size_t requestedSize) {
 size_t getMioPointerSize(void *pointer) {
     Block *block = (Block*) ((uint8_t*)pointer - sizeof(Block));
 
-    return (uint8_t*)block->end - (uint8_t*)block->start;
+    return block->size;
+}
+
+size_t getMioBlockCount(void *pointer) {
+    Block *block = (Block*) ((uint8_t*)pointer - sizeof(Block));
+
+    return block->heapMetadata->blockCount;
 }
