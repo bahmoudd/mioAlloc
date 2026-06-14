@@ -75,3 +75,7 @@ Implementing this function is trivial once you have `malloc` and `free` implemen
 ### `size_t getMioPointerSize(void* pointer)`
 
 This converts the `void*` pointer to a `Block*` pointer and returns the size by subtracting the end of the pointer to the start of it.
+
+## What I might end up doing later on
+
+- Include a `size` attribute to speed up size calculation operations
